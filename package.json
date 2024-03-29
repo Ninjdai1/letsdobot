@@ -1,0 +1,33 @@
+{
+  "name": "letsdo-bot",
+  "version": "1.0.0",
+  "description": "A utility bot for the let's do discord server",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ninjdai1/letsdo-bot.git"
+  },
+  "keywords": [
+    "discord",
+    "discordjs",
+    "nodejs",
+    "js",
+    "letsdo",
+    "minecraft",
+    "mod"
+  ],
+  "author": "Ninjdai1",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Ninjdai1/letsdo-bot/issues"
+  },
+  "homepage": "https://github.com/Ninjdai1/letsdo-bot#readme",
+  "dependencies": {
+    "adm-zip": "^0.5.12",
+    "canvas": "^2.11.2",
+    "discord.js": "^14.14.1"
+  }
+}
