@@ -1,4 +1,8 @@
 import { ActionRowBuilder, AttachmentBuilder, ComponentType, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
+import { generateRecipeImage } from "../../util/mc/gui.mjs";
+import { extractFile } from "../../util/zip/read.mjs";
+import path from "path";
+import Canvas from "canvas";
 
 export default {
     data: new SlashCommandBuilder()
@@ -9,16 +13,17 @@ export default {
             .setDescription("The item to search for")
             .setAutocomplete(true)),
     async execute(interaction, client) {
+        await interaction.deferReply({ ephemeral: true });
         const item = interaction.options.getString("item");
 
         const modRecipes = global.modData.recipes[item];
-        if(!modRecipes) return interaction.reply({ content: `Could not find any recipe for the item: \`${item}\`...`, ephemeral: true });
+        if(!modRecipes) return interaction.editReply({ content: `Could not find any recipe for the item: \`${item}\`...`, ephemeral: true });
         const recipeEmbeds = [];
         const navigationSelectMenu = new StringSelectMenuBuilder().setCustomId("ignore").setPlaceholder("Other recipes");
         for (let index = 0; index<modRecipes.length; index++) {
             const recipe = modRecipes[index];
-            await generateRecipeEmbed(recipe, item, 'en_us').then(embed => {
-                recipeEmbeds.push(embed);
+            await generateRecipeEmbed(recipe, item, 'en_us').then(output => {
+                recipeEmbeds.push(output);
             })
             navigationSelectMenu.addOptions({
                 label: recipe.type,
@@ -26,14 +31,16 @@ export default {
             });
         }
 
-        const reply = await interaction.reply({
+        const reply = await interaction.editReply({
             embeds: [recipeEmbeds[0].embed],
+            //files: recipeEmbeds[0].file ? [recipeEmbeds[0].file] : null,
             components: recipeEmbeds.length>1 ? [new ActionRowBuilder().setComponents(navigationSelectMenu)]:null,
             ephemeral: true
         });
 
         const collector = reply.createMessageComponentCollector({ componentType: ComponentType.StringSelect, time: 300_000 });
         collector.on('collect', async i => {
+            console.log(recipeEmbeds[i.values[0]])
             await i.update({embeds: [recipeEmbeds[i.values[0]]]});
         });
     },
@@ -61,17 +68,96 @@ function capitalizeFirstLetter(string) {
 async function generateRecipeEmbed(recipe, item, lang){
     const recipeEmbed = new EmbedBuilder()
         .setTitle(itemTranslation(item, lang));
-    let description;
+    let description, file;
+    let image, textures, resultTexture;
     switch (recipe.type) {
         //Vanilla recipes:
         case "minecraft:crafting_shaped":
-        case "minecraft:crafting_shapeless":
             description = `You can craft **${recipe?.result?.count || 1} ${itemTranslation(item, lang)}** in the following pattern:\n`
-                + `${craftStringFromPatter(recipe.key, recipe.pattern)}\n`;
-            for (const key of Object.keys(recipe.key)) {
-                description += `Using **${itemTranslation(itemOrTagString(recipe.key[key]), lang)}** as **\`${key}\`**\n`;
+                + `${craftStringFromPattern(recipe.key, recipe.pattern)}\n`;
+            //image = await generateRecipeImage(recipe);
+
+            //textures = {};
+            for await(const key of Object.keys(recipe.key)) {
+                const ingredient = recipe.key[key];
+                /*console.log(ingredient)
+                if(ingredient.item){
+                    const texture = getTexture(ingredient.item, global.modData);
+                    if(texture){
+                        textures[key] = await Canvas.loadImage(texture);
+                    }
+                } else if(ingredient.tag){
+                    console.log(ingredient.tag)
+                    console.log(global.modData.tags[ingredient.tag].values)
+                    const texture = getTexture(global.modData.tags[ingredient.tag].values[0], global.modData);
+                    if(texture){
+                        textures[key] = await Canvas.loadImage(texture);
+                    }
+                }*/
+                description += `Using **${itemTranslation(itemOrTagString(ingredient), lang)}** as **\`${key}\`**\n`;
             }
+            /*console.log(textures);
+            for (let y = 0; y < recipe.pattern.length; y++) {
+                const row = recipe.pattern[y]
+                console.log(row)
+                for (let x = 0; x < row.length; x++) {
+                    const element = row[x];
+                    if(textures[element]){
+                        image.ctx.drawImage(textures[element], x*36 + 10, y*36 + 27, 32, 32);
+                    }
+                }
+            }
+            resultTexture = getTexture(item, global.modData);
+            if(resultTexture){
+                image.ctx.drawImage(await Canvas.loadImage(resultTexture), 198, 63, 32, 32);
+            }
+            file = new AttachmentBuilder(image.canvas.toBuffer('image/png'), 'recipe.png').setName("recipe.png").setDescription("Item recipe")
+            recipeEmbed.setImage('attachment://recipe.png');*/
             break;
+        case "minecraft:crafting_shapeless":
+            description = `You can craft **${recipe?.result?.count || 1} ${itemTranslation(item, lang)}** using ${craftStringShapeless(recipe.ingredients)}:\n`;
+            /*image = await generateRecipeImage(recipe);
+
+            textures = {};*/
+            for await(const key of Object.keys(recipe.ingredients)) {
+                const ingredient = recipe.ingredients[key];
+                /*console.log(ingredient)
+                if(ingredient.item){
+                    const texture = getTexture(ingredient.item, global.modData);
+                    if(texture){
+                        textures[ingredient.item] = await Canvas.loadImage(texture);
+                        console.log(textures[ingredient.item])
+                    }
+                } else if(ingredient.tag){
+                    console.log(ingredient.tag)
+                    console.log(global.modData.tags[ingredient.tag].values)
+                    const texture = getTexture(global.modData.tags[ingredient.tag].values[0], global.modData);
+                    if(texture){
+                        textures[ingredient.tag] = await Canvas.loadImage(texture);
+                    }
+                }*/
+                description += `Using **${itemTranslation(itemOrTagString(ingredient), lang)}** as **\`${key}\`**\n`;
+            }
+            /*console.log(textures);
+            let ind = 0;
+            for (let y = 0; y < recipe.ingredients.length; y++) {
+                const ingredient = recipe.ingredients[y]
+                console.log(ingredient)
+                for (let c = 0; c < ingredient.count || 1; c++) {
+                    if(textures[ingredient.item] || textures[ingredient.tag]){
+                        image.ctx.drawImage(textures[ingredient.item] || textures[ingredient.tag], (ind%3)*36 + 10, (Math.floor(ind/3))*36 + 27, 32, 32);
+                    }
+                    ind++;
+                }
+            }
+            resultTexture = getTexture(item, global.modData);
+            if(resultTexture){
+                image.ctx.drawImage(await Canvas.loadImage(resultTexture), 198, 63, 32, 32);
+            }
+            file = new AttachmentBuilder(image.canvas.toBuffer('image/png'), 'recipe.png').setName("recipe.png").setDescription("Item recipe")
+            recipeEmbed.setImage('attachment://recipe.png');*/
+            break;
+
         case 'minecraft:stonecutting':
             description = `You can craft **${recipe.count || 1} ${itemTranslation(item, lang)}** using **${itemTranslation(itemOrTagString(recipe.ingredient), lang)}** in a stonecutter`;
             break;
@@ -213,7 +299,7 @@ async function generateRecipeEmbed(recipe, item, lang){
             break;
     }
     recipeEmbed.setDescription(description);
-    return {embed: recipeEmbed};
+    return {embed: recipeEmbed, file: file};
 }
 
 function itemOrTagString(data){
@@ -222,13 +308,60 @@ function itemOrTagString(data){
     return "";
 }
 
-function craftStringFromPatter(key, pattern){
+function craftStringShapeless(){
+    return "No description provided";
+}
+
+function craftStringFromPattern(key, pattern){
+    switch(pattern.length){
+        case 1:
+            return `\`\`\`╔═╦═╗\n`
+                + `║${pattern[0][0]}║ ║\n`
+                + `╠═╬═╣\n`
+                + `║ ║ ║\n`
+                + `╚═╩═╝\`\`\`\n`;
+            break;
+        case 2:
+            return `\`\`\`╔═╦═╗\n`
+                + `║${pattern[0][0]||" "}║${pattern[0][1]||" "}║\n`
+                + `╠═╬═╣\n`
+                + `║${pattern[1][0]||" "}║${pattern[1][1]||" "}║\n`
+                + `╚═╩═╝\`\`\`\n`;
+            break;
+    }
+    console.log(pattern)
     const patternString = `\`\`\`╔═╦═╦═╗\n`
-    +`║${pattern[0][0]}║${pattern[0][1]}║${pattern[0][2]}║\n`
+    +`║${pattern[0][0]}║${pattern[0][1]||" "}║${pattern[0][2]||" "}║\n`
     +`╠═╬═╬═╣\n`
-    +`║${pattern[1][0]}║${pattern[1][1]}║${pattern[1][2]}║\n`
+    +`║${pattern[1][0]||" "}║${pattern[1][1]||" "}║${pattern[1][2]||" "}║\n`
     +`╠═╬═╬═╣\n`
-    +`║${pattern[2][0]}║${pattern[2][1]}║${pattern[2][2]}║\n`
-    +`╚═╩═╩═╝\`\`\`\n`
+    +`║${pattern[2][0]||" "}║${pattern[2][1]||" "}║${pattern[2][2]||" "}║\n`
+    +`╚═╩═╩═╝\`\`\`\n`;
     return patternString;
+}
+
+function getTexture(id, data){
+    //console.log(id);
+    const modname = id.split(":")[0];
+    //const item = id.split(":")[1];
+    try{
+        const texture = extractFile(path.resolve(`./mods/${modname}.jar`), data.textures[blockHack(id)]);
+        console.log(texture)
+        return texture;
+    } catch {
+        return undefined;
+    }
+}
+
+function blockHack(id){
+    const mod = id.split(":")[0];
+    const block = id.split(":")[1];
+    if(id.includes("log")){
+        return `${id}_side`;
+    } else if(id.includes("glass_pane")){
+        return `${id}`.replace("_pane", "");
+    } else if(id.includes("crate")){
+        return `${mod}:bag_top_${block.replace("_crate", "")}`
+    }
+    return id;
 }

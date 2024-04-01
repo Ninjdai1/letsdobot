@@ -15,6 +15,13 @@ function readZipArchive(filepath) {
     return entries;
 }
 
+function extractFile(zippath, filepath){
+    //console.log(zippath, filepath)
+    const zip = new AdmZip(path.resolve(zippath));
+    return zip.readFile(`${filepath}`);
+}
+
 export {
-    readZipArchive
+    readZipArchive,
+    extractFile
 }

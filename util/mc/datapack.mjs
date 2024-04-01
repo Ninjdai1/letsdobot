@@ -2,6 +2,8 @@ import path from 'path'
 import { readZipArchive } from '../zip/read.mjs';
 import { getRecipesFromFiles } from './recipes.mjs';
 import { getLangsFromFiles } from './lang.mjs';
+import { getTexturesFromFiles } from './textures.mjs';
+import { getTagsFromFiles } from './tags.mjs';
 
 function getData(filepath){
     const data = {};
@@ -20,6 +22,8 @@ function getData(filepath){
 
     data.recipes = getRecipesFromFiles(dataFiles);
     data.langs = getLangsFromFiles(dataFiles);
+    data.textures = getTexturesFromFiles(dataFiles);
+    data.tags = getTagsFromFiles(dataFiles);
 
     return data
 }

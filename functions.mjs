@@ -1,12 +1,14 @@
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 import { Collection, WebhookClient, EmbedBuilder } from "discord.js";
+
+import { getData } from "./util/mc/datapack.mjs";
+
+import path from "path";
 import { inspect } from "util";
 import fs from "fs";
 
 import config from "./config.json" assert { type: "json" };
-import { getData } from "./util/mc/datapack.mjs";
-import path from "path";
 const { token, clientId, errorWebhookURL } =
     config;
 
@@ -194,7 +196,9 @@ function loadData(){
 function mergeModsData(modData){
     const data = {
         recipes: {},
-        langs: {}
+        langs: {},
+        textures: {},
+        tags: {}
     };
     for (const mod of modData) {
         Object.keys(mod.recipes).forEach(modKey => {
@@ -212,7 +216,20 @@ function mergeModsData(modData){
                 data.langs[lang] = mod.langs[lang];
             }
         });
+
+        Object.keys(mod.textures).forEach(texture => {
+            if(!data.textures[texture]){
+                data.textures[texture] = mod.textures[texture];
+            }
+        });
+
+        Object.keys(mod.tags).forEach(tag => {
+            if(!data.tags[tag]){
+                data.tags[tag] = mod.tags[tag];
+            }
+        });
     }
+    console.log(data.tags)
     return data;
 }
 
