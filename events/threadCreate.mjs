@@ -5,12 +5,15 @@ export default {
     name: Events.ThreadCreate,
     async execute(thread, client) {
         console.log(thread);
-        await thread.send({
-            embeds: [issueEmbed],
-            components: [issueRow],
-        })
+        if(thread.parentId == ISSUES_CHANNEL)
+            await thread.send({
+                embeds: [issueEmbed],
+                components: [issueRow],
+            });
     },
 };
+
+const ISSUES_CHANNEL = '1100521080373919945';
 
 const issueEmbed = new EmbedBuilder()
     .setTitle(`Someone will come and help soon!`)
