@@ -1,5 +1,5 @@
-/*import { buttonList } from "../interactions/buttons/index.mjs";
-import { modalList } from "../interactions/modals/index.mjs";
+import { buttonList } from "../interactions/buttons/index.mjs";
+/*import { modalList } from "../interactions/modals/index.mjs";
 import { selectMenuList } from "../interactions/selectmenus/index.mjs";*/
 
 export default {
@@ -39,7 +39,7 @@ export default {
             } catch (error) {
                 console.error(error);
             }
-        }/* else if (interaction.isButton()) {
+        } else if (interaction.isButton()) {
             const customId = interaction.customId.split("_")[0];
             if (customId == "ignore") return;
             buttonList[customId]
@@ -49,7 +49,7 @@ export default {
                           "Si vous rencontrez cette erreur, merci de contacter CoolMan#4094 !",
                       ephemeral: true,
                   });
-        } else if (interaction.isStringSelectMenu()) {
+        }/* else if (interaction.isStringSelectMenu()) {
             const customId = interaction.customId.split("_")[0];
             if (customId == "ignore") return;
             selectMenuList[customId].execute(interaction, client);

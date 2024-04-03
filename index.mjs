@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Client } from "discord.js";
+import { Client, IntentsBitField } from "discord.js";
 import {
     deploy_commands,
     loadErrorCatcher,
@@ -10,7 +10,9 @@ import config from "./config.json" assert { type: "json" };
 const { token } = config;
 
 const client = new Client({
-    intents: [],
+    intents: [
+        IntentsBitField.Flags.Guilds,
+    ],
 });
 
 loadErrorCatcher(client);
