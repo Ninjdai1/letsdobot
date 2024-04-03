@@ -2,9 +2,9 @@ import { EmbedBuilder } from "discord.js";
 
 export default {
     async execute(interaction, client) {
-        await interaction.deferUpdate();
         switch (interaction.customId.split("_")[1]) {
             case "resolve":
+                await interaction.deferUpdate();
                 await closeThread(interaction);
                 break;
             case "logs":
@@ -34,7 +34,7 @@ const logsEmbed = new EmbedBuilder()
     .setTitle("How to get your logs")
     .setDescription(
         `Depending on the launcher you use, your logs are located in different folders:\n`
-        + `* Vanilla: Navigate to your .minecraft folder (on Windows, using WIN+R and typing %appdata%), in which the logs folder is located`
-        + `* Prism/MultiMC: Open the instance's folder, then navigate to .minecraft/logs`
-        + `* Curseforge: Open the instance's folder, then navigate to the logs folder`
+        + `* Vanilla: Navigate to your .minecraft folder (on Windows, using WIN+R and typing %appdata%), in which the logs folder is located\n`
+        + `* Prism/MultiMC: Open the instance's folder, then navigate to .minecraft/logs\n`
+        + `* Curseforge: Open the instance's folder, then navigate to the logs folder\n`
     )
