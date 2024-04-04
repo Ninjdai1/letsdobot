@@ -6,12 +6,17 @@ export default {
     async execute(thread, client) {
         console.log(thread);
         if(thread.parentId == ISSUES_CHANNEL)
+            await sleep(2*1000);
             await thread.send({
                 embeds: [issueEmbed],
                 components: [issueRow],
             });
     },
 };
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 const ISSUES_CHANNEL = '1100521080373919945';
 
