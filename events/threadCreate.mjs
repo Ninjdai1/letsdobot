@@ -5,12 +5,13 @@ export default {
     name: Events.ThreadCreate,
     async execute(thread, client) {
         console.log(thread);
-        if(thread.parentId == ISSUES_CHANNEL)
+        if(thread.parentId == ISSUES_CHANNEL){
             await sleep(2*1000);
             await thread.send({
                 embeds: [issueEmbed],
                 components: [issueRow],
             });
+        }
     },
 };
 
