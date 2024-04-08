@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, PermissionsBitField } from "discord.js";
 
 export default {
     async execute(interaction, client) {
@@ -17,7 +17,14 @@ export default {
 const RESOLVED_TAG_ID = '1100522220914212979';
 
 async function closeThread(interaction){
-    await interaction.editReply({components: []});
+    if((interaction.user.id != interaction.channel.ownerId) && (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages, true))){
+        await interaction.editReply();
+        return interaction.followUp({
+            content: "You are not allowed to close this thread",
+            ephemeral: true
+        });
+    }
+    await interaction.editReply({components: [], content: `Thread marked as resolved by <@${interaction.user.id}>`});
     await interaction.channel.setAppliedTags([...interaction.channel.appliedTags, RESOLVED_TAG_ID])
     await interaction.channel.setLocked(true);
     await interaction.channel.setArchived(true);
