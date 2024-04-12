@@ -1,60 +1,68 @@
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js"
+import { SlashCommandBuilder, EmbedBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js"
+import { wikis } from "../../util/wikis.mjs";
 
-export default {
-    data: new SlashCommandBuilder()
-        .setName("wiki")
-        .setDescription("Search the recipe for an item")
-        .addStringOption(option => option
-            .setName("mod")
-            .setDescription("Which mod's wiki I should display")
-            .setChoices(
-				{ name: 'Bakery', value: 'bakery' },
-				{ name: 'Brewery', value: 'brewery' },
-				{ name: 'HerbalBrews', value: 'herbalbrews' },
-				{ name: 'Meadow', value: 'meadow' },
-				{ name: 'Vinery', value: 'vinery' },
-            )
-            .setRequired(true)),
-    async execute(interaction, client){
-        const option = interaction.options.getString('mod');
-        if(!option in Object.keys(wikis)) return interaction.reply({content: "This mod doesn't have a wiki !", ephemearl: true});
-        const wikiEMBED = new EmbedBuilder()
-            .setTitle(`${capitalizeFirstLetter(option)}`)
-            .setDescription(`[${capitalizeFirstLetter(option)}'s wiki](${wikis[option].link})`);
-        await interaction.reply({embeds: [wikiEMBED]});
-    }
-}
+const command = new SlashCommandBuilder()
+    .setName("wiki")
+    .setDescription("Search the recipe for an item")
 
-const wikis = {
-    bakery: {
-        link: "https://github.com/satisfyu/Bakery/wiki"
-    },
-    beachpary: {
-        link: "https://github.com/satisfyu/Beachparty/wiki"
-    },
-    bloomingnature: {
-        link: "https://github.com/satisfyu/BloomingNature/wiki"
-    },
-    brewery: {
-        link: "https://github.com/satisfyu/Brewery/wiki"
-    },
-    candlelight: {
-        link: "https://github.com/satisfyu/Candlelight/wiki"
-    },
-    herbalbrews: {
-        link: "https://github.com/satisfyu/HerbalBrews/wiki"
-    },
-    meadow: {
-        link: "https://github.com/satisfyu/Meadow/wiki"
-    },
-    nethervinery: {
-        link: "https://github.com/satisfyu/NetherVinery/wiki"
-    },
-    vinery: {
-        link: "https://github.com/satisfyu/Vinery/wiki"
+Object.keys(wikis).forEach(modId => {
+    const mod = wikis[modId];
+    if(!mod.disabled){
+        const modDisplayName = capitalizeFirstLetter(modId);
+        const subcommandgroup = new SlashCommandSubcommandGroupBuilder()
+            .setName(modId)
+            .setDescription(`${capitalizeFirstLetter(modId)}'s wiki`);
+
+        subcommandgroup.addSubcommand(subcommand => subcommand
+            .setName("home")
+            .setDescription(`Wiki's Home`)
+        )
+        
+        if(!mod.pages) return;
+        for(const page of Object.keys(mod.pages)){
+            const pageDiplayName = capitalizeFirstLetter(page).replace("-", " ");
+            
+            const subcommand = subcommand => subcommand
+                .setName(page.toLowerCase())
+                .setDescription(`${modDisplayName} Wiki Page for ${pageDiplayName}`)
+                .addStringOption(option => {
+                    option.setName("tag").setDescription("The tag to point to").setRequired(false);
+                    for(const tag of mod.pages[page]){
+                        const tagDiplayName = capitalizeFirstLetter(tag).replace("-", " ");
+                        option.addChoices({name: tagDiplayName, value: tag});
+                    };
+                    return option;
+                });
+            subcommandgroup.addSubcommand(subcommand);
+        }
+        command.addSubcommandGroup(subcommandgroup);
     }
-};
+});
+
 
 function capitalizeFirstLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 };
+
+export default {
+    data: command,
+    async execute(interaction, client){
+        await interaction.deferReply();
+        console.log(interaction.options)
+        const mod = interaction.options.getSubcommandGroup();
+        const page = interaction.options.getSubcommand();
+        const finalPage = page=="home" ? "" : page;
+        const tag = interaction.options?.getString("tag", false);
+        const finalTag = tag ? `#${tag}` : undefined;
+
+        const description = `[${capitalizeFirstLetter(mod)}'s wiki: ${capitalizeFirstLetter(page)}${finalTag ? ` (${finalTag})` : ""}](${wikis[mod].link}/${finalPage}${finalTag||""})`
+
+        console.log(description)
+
+        if(!mod in Object.keys(wikis)) return await interaction.editReply({content: "This mod doesn't have a wiki !", ephemeral: true});
+        const wikiEMBED = new EmbedBuilder()
+            .setTitle(`${capitalizeFirstLetter(mod)}`)
+            .setDescription(description);
+        await interaction.editReply({embeds: [wikiEMBED]});
+    }
+}
